@@ -9,13 +9,20 @@ import (
 )
 
 type Walker struct {
-	x int
-	y int
+	x     int
+	y     int
+	color Color
 }
 
 type Point struct {
 	x int
 	y int
+}
+
+type Color struct {
+	r uint8
+	g uint8
+	b uint8
 }
 
 const (
@@ -28,6 +35,7 @@ const (
 func main() {
 	var numAgents int
 	flag.IntVar(&numAgents, "numAgents", 5, "Enter the number of agents")
+	flag.Parse()
 	rl.InitWindow(screenWidth, screenHeight, "Random Walk Simulation")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
@@ -36,8 +44,9 @@ func main() {
 	for i := range numAgents {
 		_ = i
 		walker := Walker{
-			x: screenWidth / cellSize / 2,
-			y: screenHeight / cellSize / 2,
+			x:     screenWidth / cellSize / 2,
+			y:     screenHeight / cellSize / 2,
+			color: Color{r: uint8(rand.IntN(256)), g: uint8(rand.IntN(256)), b: uint8(rand.IntN(256))},
 		}
 		walkers = append(walkers, walker)
 		trails[i] = []Point{}
@@ -59,11 +68,10 @@ func main() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 
-		// Draw the grid lines
 		drawGrid()
 
 		for i := range walkers {
-			drawTrail(trails[i])
+			drawTrail(trails[i], walkers[i].color)
 			drawWalker(walkers[i])
 		}
 
@@ -72,46 +80,47 @@ func main() {
 	}
 }
 
-// --- Helper Functions for Drawing ---
-
 func drawGrid() {
-	// Draw vertical lines
 	for i := 0; i < screenWidth/cellSize; i++ {
 		x := int32(i * cellSize)
 		rl.DrawLineV(rl.NewVector2(float32(x), 0), rl.NewVector2(float32(x), screenHeight), rl.LightGray)
 	}
-	// Draw horizontal lines
 	for j := 0; j < screenHeight/cellSize; j++ {
 		y := int32(j * cellSize)
 		rl.DrawLineV(rl.NewVector2(0, float32(y)), rl.NewVector2(screenWidth, float32(y)), rl.LightGray)
 	}
 }
 
-func drawTrail(trail []Point) {
-	// Draw a small dot for every past position in the trail
-	for _, p := range trail {
-		// Convert grid coordinates (p.x, p.y) to screen coordinates
-		centerX := int32(p.x*cellSize + cellSize/2)
-		centerY := int32(p.y*cellSize + cellSize/2)
+func drawTrail(trail []Point, lineColor Color) {
+	if len(trail) < 2 {
+		return
+	}
 
-		// Draw the point. We use Blue with some transparency (Alpha)
-		rl.DrawCircle(centerX, centerY, 2, rl.Fade(rl.Blue, 0.7))
+	color := rl.Color{R: lineColor.r, G: lineColor.g, B: lineColor.b, A: 255}
+
+	for i := 1; i < len(trail); i++ {
+		first := trail[i-1]
+		second := trail[i]
+
+		x1 := int32(first.x*cellSize + cellSize/2)
+		y1 := int32(first.y*cellSize + cellSize/2)
+		x2 := int32(second.x*cellSize + cellSize/2)
+		y2 := int32(second.y*cellSize + cellSize/2)
+
+		rl.DrawLine(x1, y1, x2, y2, color)
+
+		rl.DrawCircle(x2, y2, 1, color)
 	}
 }
 
 func drawWalker(w Walker) {
-	// Convert grid coordinates (w.x, w.y) to screen coordinates
 	centerX := int32(w.x*cellSize + cellSize/2)
 	centerY := int32(w.y*cellSize + cellSize/2)
 
-	// Draw the walker as a larger Red circle
 	rl.DrawCircle(centerX, centerY, float32(cellSize/2)-2, rl.Red)
 }
 
-// --- Walker Logic ---
-
 func (w *Walker) move() {
-	// Move in one of the 8 directions (0-7).
 	randomNum := rand.IntN(8)
 
 	switch randomNum {
@@ -137,7 +146,6 @@ func (w *Walker) move() {
 		w.y--
 	}
 
-	// Keep the walker roughly within the screen boundaries (optional wrapping)
 	if w.x < 0 {
 		w.x = screenWidth/cellSize - 1
 	}
