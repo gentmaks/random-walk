@@ -1,3 +1,15 @@
-# Random Walks in GO
+# Random Walks in Go
 
-Simple go program to simulate random walks with a graphical interface
+A simple Go program that simulates multiple random walkers with a graphical interface.
+
+## Installation & Usage
+
+Clone the repository and build the executable:
+
+```bash
+git clone git@github.com:gentmaks/random-walk.git
+cd random-walk
+go build
+```
+
+./random-walk -numAgents <number of random walkers>
